@@ -25,6 +25,8 @@ dependencies:
   cupertino_icons: ^0.1.2
   qr_code_scanner:
   http:
+  shared_preferences:
+  flushbar:
 
 dev_dependencies:
   flutter_test:
