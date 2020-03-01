@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:qr_code_scanner/qr_scanner_overlay_shape.dart';
 import 'package:http/http.dart' as http;
@@ -19,69 +18,6 @@ class _MyAppState extends State<MyApp>{
   var qrText = "Scan Code Here...";
   var message = "";
   QRViewController controller;
-
-  Future<bool> confirmation() async {
-    return showDialog(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Center(
-              child: Text('$message')
-          ),
-          content: Text('Do you want to scan again?'),
-          actions: <Widget>[
-            FlatButton(
-              child: Text('Yes'),
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-            ),
-            FlatButton(
-              child: Text('No'),
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-            )
-          ],
-          elevation: 24.0,
-        );
-      },
-    );
-  }
-
-  Future<bool> errorDialog() async {
-    return showDialog(
-      context: context,
-      barrierDismissible: false, // user must tap button!
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Center(
-            child: Text(
-                '$message',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)
-            ),
-          ),
-          content: Text('Do you want to scan again?'),
-          actions: <Widget>[
-            FlatButton(
-              child: Text('Yes'),
-              onPressed: () {
-                Navigator.of(context).pop(true);
-              },
-            ),
-            FlatButton(
-              child: Text('No'),
-              onPressed: () {
-                Navigator.of(context).pop(false);
-              },
-            )
-          ],
-          elevation: 24.0,
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,6 +104,69 @@ class _MyAppState extends State<MyApp>{
       });
 
     }
+  }
+
+    Future<bool> confirmation() async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Center(
+              child: Text('$message')
+          ),
+          content: Text('Do you want to scan again?'),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Yes'),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+            FlatButton(
+              child: Text('No'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            )
+          ],
+          elevation: 24.0,
+        );
+      },
+    );
+  }
+
+  Future<bool> errorDialog() async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Center(
+            child: Text(
+                '$message',
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)
+            ),
+          ),
+          content: Text('Do you want to scan again?'),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Yes'),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+            FlatButton(
+              child: Text('No'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            )
+          ],
+          elevation: 24.0,
+        );
+      },
+    );
   }
 
 }
