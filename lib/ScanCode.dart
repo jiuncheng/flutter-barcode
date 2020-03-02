@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
@@ -17,50 +19,53 @@ class _ScanCodeState extends State<ScanCode>{
   var qrText = "Scan Code Here...";
   var message = "";
   QRViewController controller;
+  DateTime backButtonOnPressedTime;
 
-  var generalUrl = "";
-  var specificUrl = "";
+  String url = "";
 
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Scan Code'),
-        centerTitle: true,
-        backgroundColor: Colors.lightBlue,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios),
-          onPressed: () {
-            _resetUser();
-            Navigator.pop(context);
-          },
-        ),
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.settings),
+    return WillPopScope(
+      onWillPop: _handleBackBtnPressed,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Scan Code'),
+          centerTitle: true,
+          backgroundColor: Colors.lightBlue,
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: Icon(Icons.flash_on),
             onPressed: () {
-              controller.pauseCamera();
-              Navigator.pushNamed(context, '/Settings').then((value) => controller.resumeCamera());
+              controller.toggleFlash();
             },
           ),
+          actions: <Widget>[
+            IconButton(
+              icon: Icon(Icons.settings),
+              onPressed: () {
+                controller.pauseCamera();
+                Navigator.pushNamed(context, '/Settings').then((value) => controller.resumeCamera());
+              },
+            ),
+          ],
+        ),
+        body: Column(
+          children: <Widget>[
+            Expanded(
+              // flex: 5,
+              child: QRView(key: qrKey,
+                  overlay: QrScannerOverlayShape(
+                      borderRadius: 10,
+                      borderColor: Colors.lightGreenAccent,
+                      borderLength: 30,
+                      borderWidth: 10,
+                      cutOutSize: 300),
+                  onQRViewCreated: _onQRViewCreate),
+            ),
         ],
+        )
       ),
-      body: Column(
-        children: <Widget>[
-          Expanded(
-            // flex: 5,
-            child: QRView(key: qrKey,
-                overlay: QrScannerOverlayShape(
-                    borderRadius: 10,
-                    borderColor: Colors.lightGreenAccent,
-                    borderLength: 30,
-                    borderWidth: 10,
-                    cutOutSize: 300),
-                onQRViewCreated: _onQRViewCreate),
-          ),
-       ],
-      )
     );
   }
 
@@ -72,26 +77,23 @@ class _ScanCodeState extends State<ScanCode>{
 
   void _onQRViewCreate(QRViewController controller) {
     this.controller = controller;
-    controller.scannedDataStream.listen((scandata) {
 
-      if (!scandata.isEmpty) {
-        var scannedData = scandata;
-        controller.pauseCamera();
-        getUrl(scannedData);
-      }
+    _loadUrl().then((url) {
+      
+      controller.scannedDataStream.listen((scandata) {
+        if (!scandata.isEmpty) {
+          var scannedData = scandata;
+          controller.pauseCamera();
+          postData(scannedData, url);
+        }
+      });
+
     });
   }
 
-  void getUrl(scannedData) {
-    _loadUrl().then((value) {
-      postData(scannedData, value[0], value[1]);
-    });
-  }
+  Future<String> postData(scannedData, String loadedUrl) async {
 
-  Future<String> postData(scannedData, String generalUrl, String specificUrl) async {
-
-    var url = 'http://' + generalUrl + '/' + specificUrl;
-    print(url);
+    String url = loadedUrl;
     var data = {};
     data["scanCode"] = scannedData;
     var body = json.encode(data);
@@ -110,11 +112,11 @@ class _ScanCodeState extends State<ScanCode>{
         qrText = resdata["code"];
       });
 
-      confirmation().then((result) {
+      confirmation(scannedData).then((result) {
         if (result == true) {
           controller.resumeCamera();
         } else {
-          exit(0);
+          SystemNavigator.pop();
         }
       });
 
@@ -128,14 +130,14 @@ class _ScanCodeState extends State<ScanCode>{
         if (result == true) {
           controller.resumeCamera();
         } else {
-          exit(0);
+          SystemNavigator.pop();
         }
       });
 
     }
   }
 
-    Future<bool> confirmation() async {
+  Future<bool> confirmation(String scannedData) async {
     return showDialog(
       context: context,
       barrierDismissible: false, // user must tap button!
@@ -144,7 +146,7 @@ class _ScanCodeState extends State<ScanCode>{
           title: Center(
               child: Text('$message')
           ),
-          content: Text('Do you want to scan again?'),
+          content: Text('Code: $scannedData\n\nDo you want to scan again?'),
           actions: <Widget>[
             FlatButton(
               child: Text('Yes'),
@@ -203,23 +205,35 @@ class _ScanCodeState extends State<ScanCode>{
     prefs.remove('user');
   }
 
-  Future<List> _loadUrl() async {
+  Future<String> _loadUrl() async {
     final prefs = await SharedPreferences.getInstance();
-    String generalUrl = "192.168.0.10";
-    String specificUrl = "qrcode/index.php";
-    List data = List(2);
+    String url = "http://192.168.0.10/qrcode/index.php";
 
-    if (prefs.containsKey('generalurl') && prefs.containsKey('specificurl')) {
-      generalUrl = prefs.getString('generalurl');
-      specificUrl = prefs.getString('specificurl');
-      data[0] = generalUrl;
-      data[1] = specificUrl;
+    if (prefs.containsKey('url')) {
+      url = prefs.getString('url');
+      return url;
     } else {
-      data[0] = generalUrl;
-      data[1] = specificUrl;
+      return url;
     }
-
-    return data;
+    
   }
 
+  Future<bool> _handleBackBtnPressed() async {
+    DateTime currentTime = DateTime.now();
+
+    bool backButton = backButtonOnPressedTime == null || currentTime.difference(backButtonOnPressedTime) > Duration(seconds: 2);
+    if (backButton == true) {
+      backButtonOnPressedTime = currentTime;
+
+      Fluttertoast.showToast(
+        msg: 'Double Click to Exit',
+        backgroundColor: Colors.black,
+        textColor: Colors.white
+      );
+
+      return false;
+    }
+    SystemNavigator.pop();
+    return true;
+  }
 }

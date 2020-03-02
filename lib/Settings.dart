@@ -10,17 +10,16 @@ class Settings extends StatefulWidget {
 
 class _SettingsState extends State<Settings>{
 
-  String fullUrl = "http://";
+  String fullUrl = "http://192.168.0.10/qrcode/index.php";
 
-  TextEditingController generalUrlController = TextEditingController();
-  TextEditingController specificUrlController = TextEditingController();
+  TextEditingController urlController = TextEditingController();
 
   Widget _buildUrlTF() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          'General URL',
+          'URL',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontFamily: 'OpenSans',
@@ -29,42 +28,12 @@ class _SettingsState extends State<Settings>{
         Container(
           height: 60.0,
           child: TextField(
-            controller: generalUrlController,
+            controller: urlController,
             style: TextStyle(
               fontFamily: 'OpenSans',
             ),
             decoration: InputDecoration(
               hintText: 'Enter general url',
-              hintStyle: TextStyle(
-                fontFamily: 'OpenSans',
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSpecificUrlTF() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          'Specific File',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontFamily: 'OpenSans',
-          ),
-        ),
-        Container(
-          height: 60.0,
-          child: TextField(
-            controller: specificUrlController,
-            style: TextStyle(
-              fontFamily: 'OpenSans',
-            ),
-            decoration: InputDecoration(
-              hintText: 'Enter Specific File',
               hintStyle: TextStyle(
                 fontFamily: 'OpenSans',
               ),
@@ -94,17 +63,23 @@ class _SettingsState extends State<Settings>{
     );
   }
 
-    Widget _buildResetUserBtn() {
+  Widget _logoutBtn(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 20.0),
       
       child: RaisedButton(
         elevation: 5.0,
-         onPressed: () => _resetUser(),
+        onPressed: () => logoutDialog().then((status) {
+          if (status == true) {
+            _resetUser().then((status) { 
+              if (status == true) { Navigator.of(context).popUntil((route) => route.isFirst); }
+            });
+          }
+        }),
         padding: EdgeInsets.all(13.0),
         color: Colors.redAccent[100],
         child: Text(
-          'Reset User',
+          'Logout User',
           style: TextStyle(
             fontSize: 15.0,
             fontFamily: 'OpenSans'
@@ -142,8 +117,6 @@ class _SettingsState extends State<Settings>{
             child: Column(
               children: <Widget>[
                 _buildUrlTF(),
-                SizedBox(height: 20.0),
-                _buildSpecificUrlTF(),
                 Text(
                   'Full URL: $fullUrl',
                   style: TextStyle(
@@ -153,7 +126,7 @@ class _SettingsState extends State<Settings>{
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: <Widget>[
-                    _buildResetUserBtn(),
+                    _logoutBtn(context),
                     _buildURLBtn(),
                   ],
                 ),
@@ -178,34 +151,28 @@ class _SettingsState extends State<Settings>{
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    String generalUrl = "192.168.0.10";
-    String specificUrl = "qrcode/index.php";
+    String url = "http://192.168.0.10/qrcode/index.php";
 
-    if (prefs.containsKey('generalurl') && prefs.containsKey('specificurl')) {
-      generalUrl = prefs.getString('generalurl');
-      specificUrl = prefs.getString('specificurl');
-      generalUrlController.text = generalUrl;
-      specificUrlController.text = specificUrl;
+    if (prefs.containsKey('url')) {
+      url = prefs.getString('url');
+      urlController.text = url;
     } else {
-      generalUrlController.text = generalUrl;
-      specificUrlController.text = specificUrl;
+      urlController.text = url;
       _saveSettings();
     }
 
     setState(() {
-      fullUrl = "http://" + generalUrl + '/' + specificUrl;
+      fullUrl = url;
     });
 
   }
 
   Future<bool> _saveSettings() async {
     FocusScope.of(context).unfocus();
-    String generalUrl = generalUrlController.text;
-    String specificUrl = specificUrlController.text;
+    String url = urlController.text;
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('generalurl', generalUrl);
-    await prefs.setString('specificurl', specificUrl);
+    await prefs.setString('url', url);
 
     showSuccessSnackbar(context, 'Settings Saved.');
 
@@ -217,7 +184,7 @@ class _SettingsState extends State<Settings>{
     FocusScope.of(context).unfocus();
     final prefs = await SharedPreferences.getInstance();
     prefs.remove('user');
-    showSuccessSnackbar(context, 'User Resetted.');
+
     return true;
   }
 
@@ -240,6 +207,37 @@ class _SettingsState extends State<Settings>{
       leftBarIndicatorColor: Colors.lightGreenAccent[400],
       shouldIconPulse: false,
     )..show(context);
+  }
+
+  Future<bool> logoutDialog() async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Center(
+              child: Text('Logout')
+          ),
+          content: Text('Are you sure you want to logout?'),
+          actions: <Widget>[
+            FlatButton(
+              color: Colors.blue,
+              child: Text('Yes'),
+              onPressed: () {
+                Navigator.of(context).pop(true);
+              },
+            ),
+            FlatButton(
+              child: Text('No'),
+              onPressed: () {
+                Navigator.of(context).pop(false);
+              },
+            )
+          ],
+          elevation: 24.0,
+        );
+      },
+    );
   }
 
 }

@@ -141,20 +141,21 @@ class _LoginState extends State<Login>{
     );
   }
 
-  Widget _buildForgotPasswordBtn() {
-    return Container(
-      alignment: Alignment.centerRight,
-      child: FlatButton(
-        child: Text(
-          'Forgot Password?',
-          style: TextStyle(
-            color: Colors.white,
-            fontFamily: 'OpenSans'
-          ),
-        ),
-      ),
-    );
-  }
+  // Widget _buildForgotPasswordBtn() {
+  //   return Container(
+  //     alignment: Alignment.centerRight,
+  //     child: FlatButton(
+  //       onPressed: () {},
+  //       child: Text(
+  //         'Forgot Password?',
+  //         style: TextStyle(
+  //           color: Colors.white,
+  //           fontFamily: 'OpenSans'
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 
   Widget _buildRememberMeCheckBox() {
     return Container(
@@ -214,7 +215,6 @@ class _LoginState extends State<Login>{
   @override
   Widget build(BuildContext context) {
     // TODO: implement build
-    _loadUser(context);
     return Scaffold(
       body: GestureDetector(
         onTap: () {
@@ -292,32 +292,39 @@ class _LoginState extends State<Login>{
     super.dispose();
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadUser(context);
+  }
+
   void _loginUser(BuildContext context) {
     FocusScope.of(context).unfocus();
 
     final username = usernameController.text;
     final password = passwordController.text;
 
-    if (_rememberMe == true) {
-      _setRememberMe(username, password).then((value) {
-        if (_validateUser(username, password) == true) {
+    if (_validateUser(username, password) == true) {
+
+      if (_rememberMe == true) {
+        _setRememberMe(username, password).then((value) {
           Navigator.pushNamed(context, '/ScanCode');
-        } else {
-          showErrorSnackbar(context);
-        }
-      });
+        });
+      } else {
+        Navigator.pushNamed(context, '/ScanCode');
+      }
+
     } else {
+
       _resetUser().then((value) {
-        if (_validateUser(username, password) == true) {
-          Navigator.pushNamed(context, '/ScanCode');
-        } else {
           showErrorSnackbar(context);
-        }
       });
+      
     }
+
   }
 
-  bool _loadUser(BuildContext context) {
+  void _loadUser(BuildContext context) {
     _getUser().then((user) {
       if (user != null) {
         if (_validateUser(user[0], user[1]) == true) {

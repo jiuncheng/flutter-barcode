@@ -27,6 +27,7 @@ dependencies:
   http:
   shared_preferences:
   flushbar:
+  fluttertoast:
 
 dev_dependencies:
   flutter_test:
