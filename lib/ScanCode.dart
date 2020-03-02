@@ -84,7 +84,14 @@ class _ScanCodeState extends State<ScanCode>{
         if (!scandata.isEmpty) {
           var scannedData = scandata;
           controller.pauseCamera();
-          postData(scannedData, url);
+          // postData(scannedData, url);
+          confirmation(scannedData).then((result) {
+            if (result == true) {
+              controller.resumeCamera();
+            } else {
+              SystemNavigator.pop();
+            }
+          });
         }
       });
 
